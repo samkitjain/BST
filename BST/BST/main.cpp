@@ -4,6 +4,8 @@
 
 using namespace std;
 
+enum color{RED,BLACK};
+
 class node{ 
 public:
 	node(int);
@@ -11,18 +13,21 @@ public:
 	int value;
 	node *left;
 	node *right;
+	color col; // Spcifically for Left Leaning Red-BLack Tree
 };
 
 node::node(int val){
 	value = val;
 	left = NULL;
 	right = NULL;
+	col = RED;
 }
 
 class bst{
 private:
 	// variable
 	node *root;
+	node *root_rbt; 
 	// functions
 	void insert(node**,node*);
 	void inordertraverse(node*);
@@ -48,6 +53,14 @@ private:
 										 // Else we have to make query function to find that
 	int distBtwNodes(int,int,node*); // Distance in terms of hops to reach b from a. i.e.a->b . Assumtions : a & b are in tree and not null and not a=b
 	int distOfNodeFromRoot(int,node*); // Assumption node is in tree and not null
+
+	/* Specifically for red black tree */
+	bool isRed(node*);
+	void rotateLeft(node**);
+	void rotateright(node**);
+	void flipcolors(node*);
+	void rbt_push(node*,node**);
+
 public:
 	// Constructor & Destructor
 	bst();
@@ -56,6 +69,7 @@ public:
 	void push(int);
 	void print(char *);
 	void print_iter(char *);
+	void print_rbt(char* );
 	int sum(void);
 	void mirror(void);
 	bool searchnode(int);
@@ -73,10 +87,12 @@ public:
 								 // Else we have to make query function to find that
 	int distBtwNodes(int,int);   // Distance in terms of hops to reach b from a. i.e.a->b . Assumtions : a & b are in tree and not null and not a=b
 	int distOfNodeFromRoot(int); // Assumption node is in tree and not null
+	void rbt_push(int);
 };
 
 bst::bst(){
 	root = NULL;
+	root_rbt = NULL;
 }
 
 void bst::push(int val){
@@ -117,6 +133,7 @@ void bst::print_iter(char* type){
 	else
 		cout<<"Invalid selection ! Valid choices are : inorder , preorder or postorder."<<endl;
 }
+
 
 void bst::inordertraverse_iter(node *rootnode){
 	stack<node*> s;
@@ -340,7 +357,7 @@ node* bst::ksmallest(int k ,node* rootNode){
 			}
 		}
 	}
-	if(k==0) return rootNode;
+	if(k==0) return rootNode; // Instead of checking k , keep a flag , at it will be more deterministic
 	else return NULL;
 }
 
@@ -468,6 +485,89 @@ int bst::distBtwNodes(int a,int b,node* rootNode){
 	return ((dista+distb)-(2*distAnces));
 }
 
+// RBT
+
+void bst::print_rbt(char* type){
+	if(type == "inorder")
+		inordertraverse(root_rbt);
+	else if(type == "preorder")
+		preordertraverse(root_rbt);
+	else if(type == "postorder")
+		postordertraverse(root_rbt);
+	else
+		cout<<"Invalid selection ! Valid choices are : inorder , preorder or postorder."<<endl;
+}
+
+/*
+Red link between parent and child:
+
+		Parent		parent.col = Black
+		  |
+		  |	---->	Red link between parent and child node in tree is designated by making the childs color as RED.
+		  |
+		  V
+		Child		child.col = RED
+*/
+
+bool bst::isRed(node* n){
+	if(n==NULL)return 0;
+	if(n->col==RED)
+		return 1;
+	else return 0;
+}
+
+void bst::rotateLeft(node** h){
+	node* temp = (*h)->right;
+	(*h)->right = temp->left;
+	temp->left= (*h);
+	temp->col = (*h)->col;
+	(*h)->col = RED;
+	*h = temp;
+}
+
+void bst::rotateright(node** h){
+	node* temp = (*h)->left;
+	(*h)->left = temp->right;
+	temp->right = (*h);
+	temp->col = (*h)->col;
+	(*h)->col = RED;
+	*h = temp;
+}
+
+void bst::flipcolors(node* h){
+	h->col = RED;
+	h->left->col = BLACK;
+	h->right->col = BLACK;
+}
+
+void bst::rbt_push(int key){
+	node* newnode = new node(key);
+	rbt_push(newnode,&root_rbt);
+}
+
+
+void bst::rbt_push(node* newnode,node** rootnode){
+	if(*rootnode==NULL){
+		 *rootnode= newnode;
+	}
+
+	else{
+		if((*rootnode)->value<newnode->value){
+			((*rootnode)->right)?rbt_push(newnode,&((*rootnode)->right)):((*rootnode)->right)=newnode;
+		}
+
+		else if((*rootnode)->value>newnode->value){
+			((*rootnode)->left)?rbt_push(newnode,&((*rootnode)->left)):((*rootnode)->left)=newnode;
+		}
+		else{
+		}
+		
+		if(isRed((*rootnode)->right) && !isRed((*rootnode)->left)) rotateLeft(rootnode);
+		if(isRed((*rootnode)->left) && isRed((*rootnode)->left->left)) rotateright(rootnode);
+		if(isRed((*rootnode)->left) && isRed((*rootnode)->right)) flipcolors(*rootnode);	
+		
+	}
+}
 
 int main(int argc , char**argv){
 	bst b;
@@ -544,7 +644,25 @@ int main(int argc , char**argv){
 
 	cout<<endl;
 	cout<<"Distance is "<<b.distBtwNodes(3,8);
-	
+
+	/* red Black tree */
+	cout<<"RBT output"<<endl;
+	bst rbt;
+	rbt.rbt_push(19);
+	rbt.rbt_push(5);
+	rbt.rbt_push(1);
+	rbt.rbt_push(18);
+	rbt.rbt_push(3);
+	rbt.rbt_push(8);
+	rbt.rbt_push(24);
+	rbt.rbt_push(13);
+	rbt.rbt_push(16);
+	rbt.rbt_push(12);
+	rbt.print_rbt("inorder");
+
+	cout<<endl;
+
+	rbt.print_rbt("preorder");
 	getch();
 	return 0;
 }
